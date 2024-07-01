@@ -65,7 +65,7 @@ export default function Home() {
   function shuffle(a) {
     for (let i = a.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
-      ;[a[i], a[j]] = [a[j], a[i]]
+        ;[a[i], a[j]] = [a[j], a[i]]
     }
     return a
   }
@@ -175,8 +175,7 @@ export default function Home() {
               typeof signList[currentSign].src.src === "string" ||
               signList[currentSign].src.src instanceof String
             ) {
-              const detectedArray = estimatedGestures.gestures.map(p => `   ${p.name} : ${p.confidence.toFixed(2)}   `)
-              console.log(detectedArray.toString())
+              console.log(estimatedGestures.gestures.map(p => `${p.name}: ${p.confidence.toFixed(2)}`).join(', '));
               document
                 .getElementById("emojimage")
                 .setAttribute("src", signList[currentSign].src.src)
