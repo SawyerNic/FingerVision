@@ -18,7 +18,10 @@ import {
   ChakraProvider,
 } from "@chakra-ui/react"
 
+// Signimage is object with k/v pairs alphabet to image source
+// SignPass is an array of objects with src and alt keys
 import { Signimage, Signpass } from "../components/handimage"
+
 
 import About from "../components/about"
 import Metatags from "../components/metatags"
@@ -172,6 +175,8 @@ export default function Home() {
               typeof signList[currentSign].src.src === "string" ||
               signList[currentSign].src.src instanceof String
             ) {
+              const detectedArray = estimatedGestures.gestures.map(p => `   ${p.name} : ${p.confidence.toFixed(2)}   `)
+              console.log(detectedArray.toString())
               document
                 .getElementById("emojimage")
                 .setAttribute("src", signList[currentSign].src.src)
