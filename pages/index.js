@@ -45,6 +45,46 @@ export default function Home() {
 
   let gamestate = "started"
 
+  useEffect(() => {
+    // web worker
+    if (window.Worker) {
+      const gestureWorker = new Worker('gestureWorker.js');
+
+      gestureWorker.onmessage = (e) => {
+        const { action, data } = e.data;
+
+        switch (action) {
+          case 'estimatedGestures':
+            // Handle the estimated gestures here
+            console.log(data);
+            break;
+
+          // Handle other actions  
+        }
+      };
+
+      // Function to send image data to the worker for gesture estimation
+      function estimateGestures(imageData) {
+        gestureWorker.postMessage({ action: 'estimateGestures', data: { image: imageData } });
+      }
+
+      // Cleanup function
+      return () => {
+        gestureWorker.terminate();
+        console.log('Worker terminated on component unmount or HMR');
+      };
+
+      // Example usage
+      // estimateGestures(yourImageData);
+    } else {
+      console.log('Your browser does not support Web Workers.');
+    }
+  })
+
+
+
+
+
   // let net;
 
   async function runHandpose() {
@@ -55,7 +95,7 @@ export default function Home() {
 
     setInterval(() => {
       detect(net)
-    }, 150)
+    }, 300)
   }
 
   function _signList() {
@@ -131,6 +171,8 @@ export default function Home() {
         ])
 
         const estimatedGestures = await GE.estimate(hand[0].landmarks, 6.5)
+        console.log(estimatedGestures.gestures.map(p => `${p.name}: ${p.confidence.toFixed(2)}`).join(', '))
+
         // document.querySelector('.pose-data').innerHTML =JSON.stringify(estimatedGestures.poseData, null, 2);
 
         if (gamestate === "started") {
@@ -175,7 +217,6 @@ export default function Home() {
               typeof signList[currentSign].src.src === "string" ||
               signList[currentSign].src.src instanceof String
             ) {
-              console.log(estimatedGestures.gestures.map(p => `${p.name}: ${p.confidence.toFixed(2)}`).join(', '));
               document
                 .getElementById("emojimage")
                 .setAttribute("src", signList[currentSign].src.src)
