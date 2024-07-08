@@ -1,10 +1,11 @@
 import React, { useRef, useState, useEffect } from "react"
-import * as tf from "@tensorflow/tfjs"
 import * as handpose from "@tensorflow-models/handpose"
 import Webcam from "react-webcam"
 import { drawHand } from "../components/handposeutil"
 import * as fp from "fingerpose"
 import Handsigns from "../components/handsigns"
+import dynamic from 'next/dynamic';
+
 
 import {
   Text,
@@ -22,15 +23,16 @@ import {
 // SignPass is an array of objects with src and alt keys
 import { Signimage, Signpass } from "../components/handimage"
 
-
 import About from "../components/about"
 import Metatags from "../components/metatags"
 
-// import "../styles/App.css"
-
-// import "@tensorflow/tfjs-backend-webgl"
+const MyAddressForm = dynamic(() => import('./MyAddressForm.jsx'), {
+  ssr: false,
+});
 
 import { RiCameraFill, RiCameraOffFill } from "react-icons/ri"
+
+
 
 export default function Home() {
   const webcamRef = useRef(null)
@@ -40,80 +42,46 @@ export default function Home() {
 
   const [sign, setSign] = useState(null)
 
-  let signList = []
-  let currentSign = 0
-
-  let gamestate = "started"
-
-  useEffect(() => {
-    // web worker
-    if (window.Worker) {
-      const gestureWorker = new Worker('gestureWorker.js');
-
-      gestureWorker.onmessage = (e) => {
-        const { action, data } = e.data;
-
-        switch (action) {
-          case 'estimatedGestures':
-            // Handle the estimated gestures here
-            console.log(data);
-            break;
-
-          // Handle other actions  
-        }
-      };
-
-      // Function to send image data to the worker for gesture estimation
-      function estimateGestures(imageData) {
-        gestureWorker.postMessage({ action: 'estimateGestures', data: { image: imageData } });
-      }
-
-      // Cleanup function
-      return () => {
-        gestureWorker.terminate();
-        console.log('Worker terminated on component unmount or HMR');
-      };
-
-      // Example usage
-      // estimateGestures(yourImageData);
-    } else {
-      console.log('Your browser does not support Web Workers.');
-    }
-  })
-
-
-
-
-
-  // let net;
-
   async function runHandpose() {
     const net = await handpose.load()
-    _signList()
 
     // window.requestAnimationFrame(loop);
 
     setInterval(() => {
       detect(net)
-    }, 300)
+    }, 30)
   }
 
-  function _signList() {
-    signList = generateSigns()
-  }
-
-  function shuffle(a) {
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-        ;[a[i], a[j]] = [a[j], a[i]]
-    }
-    return a
-  }
-
-  function generateSigns() {
-    const password = shuffle(Signpass)
-    return password
-  }
+  //loading the fingerpose model
+  const GE = new fp.GestureEstimator([
+    fp.Gestures.ThumbsUpGesture,
+    Handsigns.aSign,
+    Handsigns.bSign,
+    Handsigns.cSign,
+    Handsigns.dSign,
+    Handsigns.eSign,
+    Handsigns.fSign,
+    Handsigns.gSign,
+    Handsigns.hSign,
+    Handsigns.iSign,
+    Handsigns.jSign,
+    Handsigns.kSign,
+    Handsigns.lSign,
+    Handsigns.mSign,
+    Handsigns.nSign,
+    Handsigns.oSign,
+    Handsigns.pSign,
+    Handsigns.qSign,
+    Handsigns.rSign,
+    Handsigns.sSign,
+    Handsigns.tSign,
+    Handsigns.uSign,
+    Handsigns.vSign,
+    Handsigns.wSign,
+    Handsigns.xSign,
+    Handsigns.ySign,
+    Handsigns.zSign,
+  ])
 
   async function detect(net) {
     // Check data is available
@@ -137,111 +105,21 @@ export default function Home() {
 
       // Make Detections
       const hand = await net.estimateHands(video)
+      // Draw hand lines
+      const ctx = canvasRef.current.getContext("2d")
+      drawHand(hand, ctx)
 
       if (hand.length > 0) {
-        //loading the fingerpose model
-        const GE = new fp.GestureEstimator([
-          fp.Gestures.ThumbsUpGesture,
-          Handsigns.aSign,
-          Handsigns.bSign,
-          Handsigns.cSign,
-          Handsigns.dSign,
-          Handsigns.eSign,
-          Handsigns.fSign,
-          Handsigns.gSign,
-          Handsigns.hSign,
-          Handsigns.iSign,
-          Handsigns.jSign,
-          Handsigns.kSign,
-          Handsigns.lSign,
-          Handsigns.mSign,
-          Handsigns.nSign,
-          Handsigns.oSign,
-          Handsigns.pSign,
-          Handsigns.qSign,
-          Handsigns.rSign,
-          Handsigns.sSign,
-          Handsigns.tSign,
-          Handsigns.uSign,
-          Handsigns.vSign,
-          Handsigns.wSign,
-          Handsigns.xSign,
-          Handsigns.ySign,
-          Handsigns.zSign,
-        ])
 
         const estimatedGestures = await GE.estimate(hand[0].landmarks, 6.5)
         console.log(estimatedGestures.gestures.map(p => `${p.name}: ${p.confidence.toFixed(2)}`).join(', '))
 
         // document.querySelector('.pose-data').innerHTML =JSON.stringify(estimatedGestures.poseData, null, 2);
 
-        if (gamestate === "started") {
-          document.querySelector("#app-title").innerText =
-            "Make a 👍 gesture with your hand to start"
-        }
-
-        if (
-          estimatedGestures.gestures !== undefined &&
-          estimatedGestures.gestures.length > 0
-        ) {
-          const confidence = estimatedGestures.gestures.map(p => p.confidence)
-          const maxConfidence = confidence.indexOf(
-            Math.max.apply(undefined, confidence)
-          )
-
-          //setting up game state, looking for thumb emoji
-          if (
-            estimatedGestures.gestures[maxConfidence].name === "thumbs_up" &&
-            gamestate !== "played"
-          ) {
-            _signList()
-            gamestate = "played"
-            document.getElementById("emojimage").classList.add("play")
-            document.querySelector(".tutor-text").innerText =
-              "make a hand gesture based on letter shown below"
-          } else if (gamestate === "played") {
-            document.querySelector("#app-title").innerText = ""
-
-            //looping the sign list
-            if (currentSign === signList.length) {
-              _signList()
-              currentSign = 0
-              return
-            }
-
-            // console.log(signList[currentSign].src.src)
-
-            //game play state
-
-            if (
-              typeof signList[currentSign].src.src === "string" ||
-              signList[currentSign].src.src instanceof String
-            ) {
-              document
-                .getElementById("emojimage")
-                .setAttribute("src", signList[currentSign].src.src)
-              if (
-                signList[currentSign].alt ===
-                estimatedGestures.gestures[maxConfidence].name
-              ) {
-                currentSign++
-              }
-              setSign(estimatedGestures.gestures[maxConfidence].name)
-            }
-          } else if (gamestate === "finished") {
-            return
-          }
-        }
       }
-      // Draw hand lines
-      const ctx = canvasRef.current.getContext("2d")
-      drawHand(hand, ctx)
+
     }
   }
-
-  //   if (sign) {
-  //     console.log(sign, Signimage[sign])
-  //   }
 
   useEffect(() => {
     runHandpose()
@@ -256,7 +134,8 @@ export default function Home() {
   }
 
   return (
-    <ChakraProvider>
+    <Box style={{ width: '50%', float: 'left', display: 'flex', flexDirection: 'column' }}>
+    <ChakraProvider >
       <Metatags />
       <Box bgColor="#5784BA">
         <Container centerContent maxW="xl" height="100vh" pt="0" pb="0">
@@ -284,7 +163,7 @@ export default function Home() {
 
           <Box id="webcam-container">
             {camState === "on" ? (
-              <Webcam id="webcam" ref={webcamRef} />
+              <Webcam id="webcam" ref={webcamRef} style={{ width: '50%', float: 'left', display: 'flex', flexDirection: 'column' }}/>
             ) : (
               <div id="webcam" background="black"></div>
             )}
@@ -320,7 +199,7 @@ export default function Home() {
             )}
           </Box>
 
-          <canvas id="gesture-canvas" ref={canvasRef} style={{}} />
+          <canvas id="gesture-canvas" ref={canvasRef} style={{ width: '50%', float: 'left', display: 'flex', flexDirection: 'column' }} />
 
           <Box
             id="singmoji"
@@ -336,7 +215,7 @@ export default function Home() {
           {/* <pre className="pose-data" color="white" style={{position: 'fixed', top: '150px', left: '10px'}} >Pose data</pre> */}
         </Container>
 
-        <Stack id="start-button" spacing={4} direction="row" align="center">
+        <Stack id="start-button" spacing={4} direction="row" align="center" >
           <Button
             leftIcon={
               camState === "on" ? (
@@ -354,5 +233,6 @@ export default function Home() {
         </Stack>
       </Box>
     </ChakraProvider>
+    </Box>
   )
 }
