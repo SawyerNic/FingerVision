@@ -6,6 +6,8 @@ import * as fp from "fingerpose"
 import * as tf from "@tensorflow/tfjs"
 import Handsigns from "../components/handsigns"
 import dynamic from 'next/dynamic';
+import Map from "react-map-gl";
+
 
 
 import {
@@ -27,13 +29,8 @@ import { Signimage, Signpass } from "../components/handimage"
 import About from "../components/about"
 import Metatags from "../components/metatags"
 
-const MyAddressForm = dynamic(() => import('./MyAddressForm.jsx'), {
-  ssr: false,
-});
 
 import { RiCameraFill, RiCameraOffFill } from "react-icons/ri"
-
-
 
 export default function Home() {
   const webcamRef = useRef(null)
@@ -119,14 +116,14 @@ export default function Home() {
         const highestConfidenceGesture = (estimatedGestures.gestures && estimatedGestures.gestures.length > 0 ? estimatedGestures.gestures : [{ confidence: -Infinity }])
           .reduce((prev, current) => (prev.confidence > current.confidence) ? prev : current);
         setSign(highestConfidenceGesture.name)
-        if(highestConfidenceGesture.name === lastSign){
+        if (highestConfidenceGesture.name === lastSign) {
           detectionCount++;
         } else {
           detectionCount = 0;
           lastSign = highestConfidenceGesture.name;
         }
-        
-        if(detectionCount > 10){
+
+        if (detectionCount > 10) {
           console.log(highestConfidenceGesture.name);
         }
 
@@ -152,9 +149,10 @@ export default function Home() {
   }
 
   return (
-    <ChakraProvider >
-      <Metatags />
-      <Box bgColor="#5784BA" style={{ width: '50%', float: 'left', display: 'flex', flexDirection: 'column' }}>
+  <ChakraProvider>
+    <Metatags />
+    <Box style={{ display: 'flex', flexDirection: 'row' }}> {/* Parent flex container */}
+      <Box bgColor="#5784BA" style={{ width: '50%', display: 'flex', flexDirection: 'column' }}> {/* Existing content */}
         <Container centerContent maxW="xl" height="100vh" pt="0" pb="0">
           <VStack spacing={4} align="center">
             <Box h="20px"></Box>
@@ -168,15 +166,6 @@ export default function Home() {
             <Box h="20px"></Box>
           </VStack>
 
-          <Heading
-            as="h1"
-            size="lg"
-            id="app-title"
-            color="white"
-            textAlign="center"
-          >
-            🧙‍♀️ Loading the Magic 🧙‍♂️
-          </Heading>
 
           <Box id="webcam-container">
             {camState === "on" ? (
@@ -216,10 +205,9 @@ export default function Home() {
             )}
           </Box>
 
-          <canvas id="gesture-canvas" ref={canvasRef} style={{ width: '50%', float: 'left', display: 'flex', flexDirection: 'column' }} />
+          <canvas id="gesture-canvas" ref={canvasRef} style={{ width: '100%', display: 'flex', flexDirection: 'column' }} />
 
           <Image h="150px" objectFit="cover" id="emojimage" />
-          {/* <pre className="pose-data" color="white" style={{position: 'fixed', top: '150px', left: '10px'}} >Pose data</pre> */}
         </Container>
 
         <Stack id="start-button" spacing={4} direction="row" align="center" >
@@ -239,6 +227,20 @@ export default function Home() {
           <About />
         </Stack>
       </Box>
-    </ChakraProvider>
-  )
+      <Box style={{ width: '50%' }}> {/* Map container */}
+        <Map
+          mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
+          initialViewState={{
+            longitude: -122.4,
+            latitude: 37.8,
+            zoom: 14
+          }}
+          style={{ width: '80%', height: '80vh', margin: '60px', position: "fixed",
+          }} // Adjusted to take full height of the viewport
+          mapStyle="mapbox://styles/mapbox/streets-v9"
+        />
+      </Box>
+    </Box>
+  </ChakraProvider>
+)
 }
