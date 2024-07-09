@@ -3,6 +3,7 @@ import * as handpose from "@tensorflow-models/handpose"
 import Webcam from "react-webcam"
 import { drawHand } from "../components/handposeutil"
 import * as fp from "fingerpose"
+import * as tf from "@tensorflow/tfjs"
 import Handsigns from "../components/handsigns"
 import dynamic from 'next/dynamic';
 
@@ -83,6 +84,9 @@ export default function Home() {
     Handsigns.zSign,
   ])
 
+  let detectionCount = 0;
+  let lastSign = null;
+
   async function detect(net) {
     // Check data is available
     if (
@@ -111,13 +115,27 @@ export default function Home() {
 
       if (hand.length > 0) {
 
-        const estimatedGestures = await GE.estimate(hand[0].landmarks, 6.5)
-        console.log(estimatedGestures.gestures.map(p => `${p.name}: ${p.confidence.toFixed(2)}`).join(', '))
+        const estimatedGestures = hand.length > 0 && await GE.estimate(hand[0].landmarks, 6.5);
+        const highestConfidenceGesture = (estimatedGestures.gestures && estimatedGestures.gestures.length > 0 ? estimatedGestures.gestures : [{ confidence: -Infinity }])
+          .reduce((prev, current) => (prev.confidence > current.confidence) ? prev : current);
+        setSign(highestConfidenceGesture.name)
+        if(highestConfidenceGesture.name === lastSign){
+          detectionCount++;
+        } else {
+          detectionCount = 0;
+          lastSign = highestConfidenceGesture.name;
+        }
+        
+        if(detectionCount > 10){
+          console.log(highestConfidenceGesture.name);
+        }
+
+        //console.log(Math.max(...estimatedGestures.confidence))
+        //console.log(estimatedGestures.gestures.map(p => `${p.name}: ${p.confidence.toFixed(2)}`).join(', '))
 
         // document.querySelector('.pose-data').innerHTML =JSON.stringify(estimatedGestures.poseData, null, 2);
 
       }
-
     }
   }
 
@@ -134,10 +152,9 @@ export default function Home() {
   }
 
   return (
-    <Box style={{ width: '50%', float: 'left', display: 'flex', flexDirection: 'column' }}>
     <ChakraProvider >
       <Metatags />
-      <Box bgColor="#5784BA">
+      <Box bgColor="#5784BA" style={{ width: '50%', float: 'left', display: 'flex', flexDirection: 'column' }}>
         <Container centerContent maxW="xl" height="100vh" pt="0" pb="0">
           <VStack spacing={4} align="center">
             <Box h="20px"></Box>
@@ -163,7 +180,7 @@ export default function Home() {
 
           <Box id="webcam-container">
             {camState === "on" ? (
-              <Webcam id="webcam" ref={webcamRef} style={{ width: '50%', float: 'left', display: 'flex', flexDirection: 'column' }}/>
+              <Webcam id="webcam" ref={webcamRef} style={{ width: '50%', float: 'left', display: 'flex', flexDirection: 'column' }} />
             ) : (
               <div id="webcam" background="black"></div>
             )}
@@ -179,7 +196,7 @@ export default function Home() {
                   textAlign: "-webkit-center",
                 }}
               >
-                <Text color="white" fontSize="sm" mb={1}>
+                <Text color="black" fontSize="sm" mb={1}>
                   detected gestures
                 </Text>
                 <img
@@ -200,16 +217,6 @@ export default function Home() {
           </Box>
 
           <canvas id="gesture-canvas" ref={canvasRef} style={{ width: '50%', float: 'left', display: 'flex', flexDirection: 'column' }} />
-
-          <Box
-            id="singmoji"
-            style={{
-              zIndex: 9,
-              position: "fixed",
-              top: "50px",
-              right: "30px",
-            }}
-          ></Box>
 
           <Image h="150px" objectFit="cover" id="emojimage" />
           {/* <pre className="pose-data" color="white" style={{position: 'fixed', top: '150px', left: '10px'}} >Pose data</pre> */}
@@ -233,6 +240,5 @@ export default function Home() {
         </Stack>
       </Box>
     </ChakraProvider>
-    </Box>
   )
 }
