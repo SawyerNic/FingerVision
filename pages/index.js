@@ -8,7 +8,7 @@ import Handsigns from "../components/handsigns"
 import dynamic from 'next/dynamic';
 import Map from "react-map-gl";
 
-
+import MyMapComponent from './MapComponent';
 
 import {
   Text,
@@ -169,11 +169,11 @@ export default function Home() {
 
           <Box id="webcam-container">
             {camState === "on" ? (
-              <Webcam id="webcam" ref={webcamRef} style={{ width: '50%', float: 'left', display: 'flex', flexDirection: 'column' }} />
+              <Webcam id="webcam" ref={webcamRef} style={{ width: '50%', float: 'left', display: 'flex', flexDirection: 'column'}} />
             ) : (
               <div id="webcam" background="black"></div>
             )}
-
+        
             {sign ? (
               <div
                 style={{
@@ -227,8 +227,8 @@ export default function Home() {
           <About />
         </Stack>
       </Box>
-      <Box style={{ width: '50%' }}> {/* Map container */}
-        <Map
+      <Box style={{ width: '50%'}}> {/* Map container */}
+        {/* <Map
           mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
           initialViewState={{
             longitude: -122.4,
@@ -238,7 +238,8 @@ export default function Home() {
           style={{ width: '80%', height: '80vh', margin: '60px', position: "fixed",
           }} // Adjusted to take full height of the viewport
           mapStyle="mapbox://styles/mapbox/streets-v9"
-        />
+        /> */}
+        <MyMapComponent />
       </Box>
     </Box>
   </ChakraProvider>
