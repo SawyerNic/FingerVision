@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
+import GeocoderContext from './GeoContext.jsx';
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
@@ -8,6 +9,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 const MyMapComponent = () => {
   const mapContainerRef = useRef();
   const mapRef = useRef();
+  const geocoderRef = useRef();
 
   useEffect(() => {
     mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
@@ -19,7 +21,7 @@ const MyMapComponent = () => {
       zoom: 13
     });
 
-    let geocoder = new MapboxGeocoder({
+    geocoderRef.current = new MapboxGeocoder({
       accessToken: mapboxgl.accessToken,
       mapboxgl: mapboxgl
     })
@@ -27,15 +29,19 @@ const MyMapComponent = () => {
 
 
     mapRef.current.addControl(
-      geocoder
+      geocoderRef.current
     );
 
-    geocoder.setInput('yolo');
+    geocoderRef.current.setInput('yolo');
 
     return () => mapRef.current.remove();
   }, []);
 
-  return <div ref={mapContainerRef} style={{ height: '100%' }} />;
+  return  (
+    <GeocoderContext.Provider value={{ setInput: (text) => geocoderRef.current?.setInput(text) }}>
+      <div ref={mapContainerRef} style={{ height: '100%' }} />
+    </GeocoderContext.Provider>
+  );
 };
 
 

@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic';
 import Map from "react-map-gl";
 
 import MyMapComponent from './MapComponent';
+import GeocoderContext from './GeoContext';
 
 import {
   Text,
@@ -33,6 +34,9 @@ import Metatags from "../components/metatags"
 import { RiCameraFill, RiCameraOffFill } from "react-icons/ri"
 
 export default function Home() {
+  
+  const { setInput } = React.useContext(GeocoderContext);
+
   const webcamRef = useRef(null)
   const canvasRef = useRef(null)
 
@@ -125,6 +129,7 @@ export default function Home() {
 
         if (detectionCount > 10) {
           console.log(highestConfidenceGesture.name);
+          setInput(highestConfidenceGesture.name);
         }
 
         //console.log(Math.max(...estimatedGestures.confidence))
@@ -149,86 +154,88 @@ export default function Home() {
   }
 
   return (
-  <ChakraProvider>
-    <Metatags />
-    <Box style={{ display: 'flex', flexDirection: 'row' }}> {/* Parent flex container */}
-      <Box bgColor="#5784BA" style={{ width: '50%', display: 'flex', flexDirection: 'column' }}> {/* Existing content */}
-        <Container centerContent maxW="xl" height="100vh" pt="0" pb="0">
-          <VStack spacing={4} align="center">
-            <Box h="20px"></Box>
-            <Heading
-              as="h3"
-              size="md"
-              className="tutor-text"
-              color="white"
-              textAlign="center"
-            ></Heading>
-            <Box h="20px"></Box>
-          </VStack>
+    <ChakraProvider>
+      <Metatags />
+      <Box style={{ display: 'flex', flexDirection: 'row' }}> {/* Parent flex container */}
+        <Box bgColor="#5784BA" style={{ width: '50%', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100vh' }}> {/* Updated this line */}
+          <Container centerContent maxW="xl" height="100vh" pt="0" pb="0">
+            <VStack spacing={4} align="center">
+              <Box h="20px"></Box>
+              <Heading
+                as="h3"
+                size="md"
+                className="tutor-text"
+                color="white"
+                textAlign="center"
+              ></Heading>
+              <Box h="20px"></Box>
+            </VStack>
 
 
-          <Box id="webcam-container">
-            {camState === "on" ? (
-              <Webcam id="webcam" ref={webcamRef} style={{ width: '50%', float: 'left', display: 'flex', flexDirection: 'column'}} />
-            ) : (
-              <div id="webcam" background="black"></div>
-            )}
-        
-            {sign ? (
-              <div
-                style={{
-                  position: "absolute",
-                  marginLeft: "auto",
-                  marginRight: "auto",
-                  right: "calc(50% - 50px)",
-                  bottom: 100,
-                  textAlign: "-webkit-center",
-                }}
-              >
-                <Text color="black" fontSize="sm" mb={1}>
-                  detected gestures
-                </Text>
-                <img
-                  alt="signImage"
-                  src={
-                    Signimage[sign]?.src
-                      ? Signimage[sign].src
-                      : "/loveyou_emoji.svg"
-                  }
-                  style={{
-                    height: 30,
-                  }}
-                />
-              </div>
-            ) : (
-              " "
-            )}
-          </Box>
-
-          <canvas id="gesture-canvas" ref={canvasRef} style={{ width: '100%', display: 'flex', flexDirection: 'column' }} />
-
-          <Image h="150px" objectFit="cover" id="emojimage" />
-        </Container>
-
-        <Stack id="start-button" spacing={4} direction="row" align="center" >
-          <Button
-            leftIcon={
-              camState === "on" ? (
-                <RiCameraFill size={20} />
+            <Box id="webcam-container" style={{ width: '50%', float: 'left' }}>
+              {camState === "on" ? (
+                <Webcam id="webcam" ref={webcamRef} style={{ width: '50%', float: 'left', display: 'flex', flexDirection: 'column' }} />
               ) : (
-                <RiCameraOffFill size={20} />
-              )
-            }
-            onClick={turnOffCamera}
-            colorScheme="orange"
-          >
-            Camera
-          </Button>
-          <About />
-        </Stack>
-      </Box>
-      <Box style={{ width: '50%'}}> {/* Map container */}
-        {/* <Map
+                <div id="webcam" background="black"></div>
+              )}
+
+              {sign ? (
+                <div
+                  style={{
+                    position: "absolute",
+                    marginLeft: "auto",
+                    marginRight: "auto",
+                    right: "calc(50% - 50px)",
+                    bottom: 100,
+                    textAlign: "-webkit-center",
+                  }}
+                >
+                  <Text color="black" fontSize="sm" mb={1}>
+                    detected gestures
+                  </Text>
+                  <img
+                    alt="signImage"
+                    src={
+                      Signimage[sign]?.src
+                        ? Signimage[sign].src
+                        : "/loveyou_emoji.svg"
+                    }
+                    style={{
+                      height: 30,
+                    }}
+                  />
+                </div>
+              ) : (
+                " "
+              )}
+              <canvas id="gesture-canvas" ref={canvasRef} style={{ width: '50%', display: 'flex', flexDirection: 'column', float: 'left'}} />
+
+              <Image h="150px" objectFit="cover" id="emojimage" />
+              <Stack id="start-button" direction="row" style={{ position: 'absolute',width: '100%', display: 'flex', float: 'left'}}>
+                <Button
+                  leftIcon={
+                    camState === "on" ? (
+                      <RiCameraFill size={20} />
+                    ) : (
+                      <RiCameraOffFill size={20} />
+                    )
+                  }
+                  onClick={turnOffCamera}
+                  colorScheme="orange"
+                >
+                  Camera
+                </Button>
+                <About />
+              </Stack>
+            </Box>
+
+
+          </Container>
+
+
+        </Box>
+        <Box style={{ width: '50%' }}> {/* Map container */}
+          {/* <Map
           mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
           initialViewState={{
             longitude: -122.4,
@@ -239,9 +246,9 @@ export default function Home() {
           }} // Adjusted to take full height of the viewport
           mapStyle="mapbox://styles/mapbox/streets-v9"
         /> */}
-        <MyMapComponent />
+          <MyMapComponent />
+        </Box>
       </Box>
-    </Box>
-  </ChakraProvider>
-)
+    </ChakraProvider>
+  )
 }
