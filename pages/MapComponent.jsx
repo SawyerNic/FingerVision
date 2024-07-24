@@ -1,18 +1,29 @@
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
-import GeocoderContext from './GeoContext.jsx';
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 
+
 const MyMapComponent = () => {
   const mapContainerRef = useRef();
   const mapRef = useRef();
-  const geocoderRef = useRef();
+  const geocoderRef = useRef(null);
+
+  mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+
+  geocoderRef.current = new MapboxGeocoder({
+    accessToken: mapboxgl.accessToken,
+    mapboxgl: mapboxgl
+  });
+
+  const setGeocoderInput = (input) => {
+    geocoderRef.current.setInput(input);
+  }
 
   useEffect(() => {
-    mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+
 
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
@@ -21,28 +32,19 @@ const MyMapComponent = () => {
       zoom: 13
     });
 
-    geocoderRef.current = new MapboxGeocoder({
-      accessToken: mapboxgl.accessToken,
-      mapboxgl: mapboxgl
-    })
-
-
 
     mapRef.current.addControl(
       geocoderRef.current
     );
 
-    geocoderRef.current.setInput('yolo');
+    setGeocoderInput('Toronto');
 
     return () => mapRef.current.remove();
   }, []);
 
   return  (
-    <GeocoderContext.Provider value={{ setInput: (text) => geocoderRef.current?.setInput(text) }}>
       <div ref={mapContainerRef} style={{ height: '100%' }} />
-    </GeocoderContext.Provider>
   );
 };
-
 
 export default MyMapComponent;

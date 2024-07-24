@@ -7,9 +7,14 @@ import * as tf from "@tensorflow/tfjs"
 import Handsigns from "../components/handsigns"
 import dynamic from 'next/dynamic';
 import Map from "react-map-gl";
+import mapboxgl from 'mapbox-gl';
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 
-import MyMapComponent from './MapComponent';
-import GeocoderContext from './GeoContext';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
+
+import { useGeocoder } from './MapComponent.jsx';
+import MyMapComponent from './MapComponent.jsx';
 
 import {
   Text,
@@ -25,7 +30,7 @@ import {
 
 // Signimage is object with k/v pairs alphabet to image source
 // SignPass is an array of objects with src and alt keys
-import { Signimage, Signpass } from "../components/handimage"
+import { Signimage } from "../components/handimage"
 
 import About from "../components/about"
 import Metatags from "../components/metatags"
@@ -34,9 +39,9 @@ import Metatags from "../components/metatags"
 import { RiCameraFill, RiCameraOffFill } from "react-icons/ri"
 
 export default function Home() {
-  
-  const { setInput } = React.useContext(GeocoderContext);
 
+
+  let searchTerm = "";
   const webcamRef = useRef(null)
   const canvasRef = useRef(null)
 
@@ -88,6 +93,32 @@ export default function Home() {
   let detectionCount = 0;
   let lastSign = null;
 
+  const mapContainerRef = useRef();
+  const mapRef = useRef();
+  const geocoderRef = useRef(null);
+
+  useEffect(() => {
+    if (mapContainerRef.current && !mapRef.current) {
+      mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+
+      const map = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [-79.4512, 43.6568],
+        zoom: 13
+      });
+
+      const geocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        mapboxgl: mapboxgl
+      });
+
+      map.addControl(geocoder);
+      mapRef.current = map;
+      geocoderRef.current = geocoder;
+    }
+  }, []); // Empty dependency array ensures this runs once on mount
+
   async function detect(net) {
     // Check data is available
     if (
@@ -110,6 +141,7 @@ export default function Home() {
 
       // Make Detections
       const hand = await net.estimateHands(video)
+
       // Draw hand lines
       const ctx = canvasRef.current.getContext("2d")
       drawHand(hand, ctx)
@@ -127,17 +159,22 @@ export default function Home() {
           lastSign = highestConfidenceGesture.name;
         }
 
-        if (detectionCount > 10) {
-          console.log(highestConfidenceGesture.name);
-          setInput(highestConfidenceGesture.name);
+        if (detectionCount > 10 && highestConfidenceGesture.name) {
+          searchTerm = highestConfidenceGesture.name;
+          // Assuming geocoderRef.current correctly references your geocoder instance
+          if (geocoderRef.current) {
+            console.log('Setting input on geocoder:', highestConfidenceGesture.name);
+
+            geocoderRef.current.setInput(highestConfidenceGesture.name);
+            if (highestConfidenceGesture.name === "H") {
+              searchTerm = "Strong Hospital";
+              mapRef.current.flyTo({center: [-77.6256, 43.1226], zoom: 15});
+            }
+          }
         }
 
-        //console.log(Math.max(...estimatedGestures.confidence))
-        //console.log(estimatedGestures.gestures.map(p => `${p.name}: ${p.confidence.toFixed(2)}`).join(', '))
-
-        // document.querySelector('.pose-data').innerHTML =JSON.stringify(estimatedGestures.poseData, null, 2);
-
       }
+      geocoderRef.current.setInput(searchTerm);
     }
   }
 
@@ -170,7 +207,6 @@ export default function Home() {
               ></Heading>
               <Box h="20px"></Box>
             </VStack>
-
 
             <Box id="webcam-container" style={{ width: '50%', float: 'left' }}>
               {camState === "on" ? (
@@ -208,10 +244,10 @@ export default function Home() {
               ) : (
                 " "
               )}
-              <canvas id="gesture-canvas" ref={canvasRef} style={{ width: '50%', display: 'flex', flexDirection: 'column', float: 'left'}} />
+              <canvas id="gesture-canvas" ref={canvasRef} style={{ width: '50%', display: 'flex', flexDirection: 'column', float: 'left' }} />
 
               <Image h="150px" objectFit="cover" id="emojimage" />
-              <Stack id="start-button" direction="row" style={{ position: 'absolute',width: '100%', display: 'flex', float: 'left'}}>
+              <Stack id="start-button" direction="row" style={{ position: 'absolute', width: '100%', display: 'flex', float: 'left' }}>
                 <Button
                   leftIcon={
                     camState === "on" ? (
@@ -234,19 +270,8 @@ export default function Home() {
 
 
         </Box>
-        <Box style={{ width: '50%' }}> {/* Map container */}
-          {/* <Map
-          mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
-          initialViewState={{
-            longitude: -122.4,
-            latitude: 37.8,
-            zoom: 14
-          }}
-          style={{ width: '80%', height: '80vh', margin: '60px', position: "fixed",
-          }} // Adjusted to take full height of the viewport
-          mapStyle="mapbox://styles/mapbox/streets-v9"
-        /> */}
-          <MyMapComponent />
+        <Box style={{ width: '50%' }}>
+          <div ref={mapContainerRef} style={{ height: '100%' }} />
         </Box>
       </Box>
     </ChakraProvider>
