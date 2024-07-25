@@ -13,8 +13,7 @@ import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 
-import { useGeocoder } from './MapComponent.jsx';
-import MyMapComponent from './MapComponent.jsx';
+
 
 import {
   Text,
@@ -116,6 +115,10 @@ export default function Home() {
       map.addControl(geocoder);
       mapRef.current = map;
       geocoderRef.current = geocoder;
+      new mapboxgl.Marker()
+      .setLngLat([-77.6256, 43.1226])
+      .addTo(map); 
+
     }
   }, []); // Empty dependency array ensures this runs once on mount
 
